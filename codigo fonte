@@ -1,0 +1,60 @@
+// Bibliotecas necessárias 
+
+#include <Stepper.h> // biblioteca motor de passo
+
+#define in1  25   // entrada 1 do uln2003
+#define in2  26   // entrada 2
+#define in3  16   // entrada 3
+#define in4  5    // entrada 4
+
+const int stepsPerRevolution = 2048; // numero de passos por revolução
+
+int analogSoloSeco = 840; //VALOR MEDIDO COM O SOLO SECO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
+int analogSoloMolhado = 700; //VALOR MEDIDO COM O SOLO MOLHADO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
+int percSoloSeco = 0; //MENOR PERCENTUAL DO SOLO SECO (0% - NÃO ALTERAR)
+int percSoloMolhado = 100; //MAIOR PERCENTUAL DO SOLO MOLHADO (100% - NÃO ALTERAR)
+
+int Porcento;
+int PinoA = 2; // Define o pino 25 como Pino Analógico do sensor
+int PinoD = 12; // Define pino 12 como Pino Digital do Sensor 
+
+int Rele = 4; // Pino Digital 4 como Relé
+
+int EstadoSensor = 0;
+int UltimoEstSensor = 0;
+
+Stepper myStepper(stepsPerRevolution, in1,in3,in2,in4);
+
+int  ValAnalogIn; // Introduz o valor analógico ao código
+
+void setup() {
+Serial.begin(9600); 
+
+pinMode(Rele, OUTPUT); // Declara o Rele como Saída Digital 
+pinMode(PinoD, INPUT);
+
+}
+
+void loop() {
+Porcento = analogRead(PinoA);
+Porcento = constrain(analogRead(PinoA),analogSoloMolhado,analogSoloSeco); //MANTÉM valorLido DENTRO DO INTERVALO (ENTRE analogSoloMolhado E analogSoloSeco)
+ Porcento = map(Porcento,analogSoloMolhado,analogSoloSeco,percSoloMolhado,percSoloSeco); //EXECUTA A FUNÇÃO "map" DE ACORDO COM OS PARÂMETROS PASSADOS
+ Serial.print("Umidade do solo: "); //IMPRIME O TEXTO NO MONITOR SERIAL
+ Serial.print(Porcento); //IMPRIME NO MONITOR SERIAL O PERCENTUAL DE UMIDADE DO SOLO
+ Serial.println("%"); //IMPRIME O CARACTERE NO MONITOR SERIAL
+ delay(3000);  //INTERVALO DE 10 SEGUNDO
+ 
+
+if (Porcento >= 76) { // Se a porcentagem for menor ou igual à 76%. OBS: Você pode alterar essa porcentagem 
+  
+Serial.println("Irrigando Planta"); // Imprime no monitor serial
+digitalWrite(Rele, LOW); // Aciona Relé
+}
+
+else { // Caso contrario 
+  
+Serial.println("Planta Irrigada"); // Imprime a  no monitor serial
+digitalWrite(Rele, HIGH); // Desliga Relé
+delay (3000);
+}
+}
