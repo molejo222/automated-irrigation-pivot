@@ -1,13 +1,19 @@
 // Bibliotecas necessárias 
 
 #include <Stepper.h> // biblioteca motor de passo
+#include <WiFi.h> // biblioteca wifi
+#include <WiFiClientSecure.h> // biblioteca propria para esp32
+
+WiFiClientSecure client;//Cria um cliente seguro (para ter acesso ao HTTPS)
+String textFix = "GET /forms/d/e/1FAIpQLSc1kmZTpBdesAGbWdoIJQ0wBe7Z1jM21dBnZx_WkyT2Mumiqw/formResponse?ifq&entry.52957509 =";
+//Essa String sera uma auxiliar contendo o link utilizado pelo GET, para nao precisar ficar re-escrevendo toda hora
 
 #define in1  25   // entrada 1 do uln2003
 #define in2  26   // entrada 2
 #define in3  16   // entrada 3
 #define in4  5    // entrada 4
 
-const int stepsPerRevolution = 2048; // numero de passos por revolução
+
 
 int analogSoloSeco = 840; //VALOR MEDIDO COM O SOLO SECO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
 int analogSoloMolhado = 700; //VALOR MEDIDO COM O SOLO MOLHADO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
@@ -15,7 +21,7 @@ int percSoloSeco = 0; //MENOR PERCENTUAL DO SOLO SECO (0% - NÃO ALTERAR)
 int percSoloMolhado = 100; //MAIOR PERCENTUAL DO SOLO MOLHADO (100% - NÃO ALTERAR)
 
 int Porcento;
-int PinoA = 2; // Define o pino 25 como Pino Analógico do sensor
+int PinoA = 2; // Define o pino 2 como Pino Analógico do sensor
 int PinoD = 12; // Define pino 12 como Pino Digital do Sensor 
 
 int Rele = 4; // Pino Digital 4 como Relé
@@ -23,15 +29,23 @@ int Rele = 4; // Pino Digital 4 como Relé
 int EstadoSensor = 0;
 int UltimoEstSensor = 0;
 
+
+const int stepsPerRevolution = 13653; // numero de passos por revolução
+
 Stepper myStepper(stepsPerRevolution, in1,in3,in2,in4);
 
 int  ValAnalogIn; // Introduz o valor analógico ao código
 
-void setup() {
-Serial.begin(9600); 
+void setup()
+{
+    Serial.begin(9600);//Inicia a comunicacao serial
+    WiFi.mode(WIFI_STA);//Habilita o modo estaçao
+   WiFi.begin("molejo 405", "7223750C56");//Conecta na rede
+    
+    delay(2000);//Espera um tempo para se conectar no WiFi
 
-pinMode(Rele, OUTPUT); // Declara o Rele como Saída Digital 
-pinMode(PinoD, INPUT);
+  pinMode(Rele, OUTPUT); // Declara o Rele como Saída Digital 
+  pinMode(PinoD, INPUT);
 
 }
 
@@ -45,16 +59,30 @@ Porcento = constrain(analogRead(PinoA),analogSoloMolhado,analogSoloSeco); //MANT
  delay(3000);  //INTERVALO DE 10 SEGUNDO
  
 
-if (Porcento >= 76) { // Se a porcentagem for menor ou igual à 76%. OBS: Você pode alterar essa porcentagem 
+if (Porcento >= 50) { // Se a porcentagem for menor ou igual à 50%. OBS: Você pode alterar essa porcentagem 
   
-Serial.println("Irrigando Planta"); // Imprime no monitor serial
+Serial.println("irrigando"); // Imprime no monitor serial
 digitalWrite(Rele, LOW); // Aciona Relé
-}
+{
+  (client.connect("docs.google.com", 443) == 1);//Tenta se conectar ao servidor do Google docs na porta 443 (HTTPS)
+   {
+       String toSend = textFix;//Atribuimos a String auxiliar na nova String que sera enviada
+        toSend += printf("sim");//Adicionamos um valor aleatorio
+        toSend += "&submit=Submit HTTP/1.1";//Completamos o metodo GET para nosso formulario.
 
-else { // Caso contrario 
+       client.println(toSend);//Enviamos o GET ao servidor-
+        client.println("Host: docs.google.com");//-
+       client.println();//-
+        client.stop();//Encerramos a conexao com o servidor
+        //Serial.println("Dados enviados.");//Mostra no monitor que foi enviado
+else if(Porcento <= 50){
   
-Serial.println("Planta Irrigada"); // Imprime a  no monitor serial
+Serial.println("Planta irrigada"); // Imprime a  no monitor serial
 digitalWrite(Rele, HIGH); // Desliga Relé
-delay (3000);
+
+}
+if (vald == HIGH){
+myStepper.step(stepsPerRevolution); // anda o passa definido por revolução acima
+myStepper.step(-stepsPerRevolution); // retorna andando para trás
 }
 }
